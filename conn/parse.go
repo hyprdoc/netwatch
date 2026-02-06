@@ -173,7 +173,7 @@ func FetchConnections(netPath string) ([]Connection, error) {
 	for i := range conns {
 
 		// Handle rare inode=0 (kernel reserved?)
-		if conns[i].PID == "0" {
+		if conns[i].Inode == "0" {
 			conns[i].Proc = "No Owner"
 			continue
 		}
@@ -206,7 +206,7 @@ func parse(hex string) (string, string) {
 
 	ip := getip(iphex)
 
-	port, _ := strconv.ParseInt(porthex, 16, 16)
+	port, _ := strconv.ParseInt(porthex, 16, 64)
 
 	return ip, fmt.Sprintf("%d", port)
 }
