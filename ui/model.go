@@ -7,6 +7,15 @@ import (
 	"github.com/xruc/netwatch/conn"
 )
 
+// FilterMode represents the connection filter state
+type FilterMode int
+
+const (
+	FilterAll FilterMode = iota
+	FilterLocal
+	FilterPublic
+)
+
 // Model represents the application state for the Bubble Tea UI
 type Model struct {
 	connections []conn.Connection
@@ -14,6 +23,7 @@ type Model struct {
 	width       int
 	height      int
 	netPath     string
+	filterMode  FilterMode
 }
 
 // tickMsg is sent periodically to refresh connection data

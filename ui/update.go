@@ -15,6 +15,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			// Manual refresh
 			return m, fetchConnections(m.netPath)
+		case "l":
+			// Toggle filter mode: all -> local -> public -> all
+			switch m.filterMode {
+			case FilterAll:
+				m.filterMode = FilterLocal
+			case FilterLocal:
+				m.filterMode = FilterPublic
+			case FilterPublic:
+				m.filterMode = FilterAll
+			}
 		}
 
 	case tea.WindowSizeMsg:

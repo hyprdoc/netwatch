@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/xruc/netwatch/conn"
 )
 
 var (
@@ -63,10 +64,20 @@ func (m Model) View() string {
 		return b.String()
 	}
 
+	// Filter connections based on mode
+	filteredConns := m.filterConnections()
+
 	// No connections
-	if len(m.connections) == 0 {
-		b.WriteString("No active connections found...\n\n")
-		b.WriteString(helpStyle.Render("Press 'q' to quit • Press 'r' to refresh"))
+	if len(filteredConns) == 0 {
+		filterMsg := ""
+		switch m.filterMode {
+		case FilterLocal:
+			filterMsg = " (filtering: local only)"
+		case FilterPublic:
+			filterMsg = " (filtering: public only)"
+		}
+		b.WriteString(fmt.Sprintf("No connections found%s...\n\n", filterMsg))
+		b.WriteString(helpStyle.Render("Press 'q' to quit • Press 'r' to refresh • Press 'l' to toggle filter"))
 		return b.String()
 	}
 
@@ -91,7 +102,7 @@ func (m Model) View() string {
 	b.WriteString("\n")
 
 	// Table rows
-	for i, c := range m.connections {
+	for i, c := range filteredConns {
 		localAddr := fmt.Sprintf("%s:%s", c.LocalIp, c.LocalPort)
 		remoteAddr := fmt.Sprintf("%s:%s", c.RemoteIp, c.RemotePort)
 
@@ -144,10 +155,96 @@ func (m Model) View() string {
 
 	// Footer with connection count and help
 	b.WriteString("\n")
+
+	// Filter status
+	filterStatus := "all"
+	switch m.filterMode {
+	case FilterLocal:
+		filterStatus = "local only"
+	case FilterPublic:
+		filterStatus = "public only"
+	}
+
 	b.WriteString(helpStyle.Render(
-		fmt.Sprintf("Total connections: %d • Press 'q' to quit • Press 'r' to refresh • Auto-refresh: 2s",
-			len(m.connections)),
+		fmt.Sprintf("Showing: %d/%d (%s) • 'q' quit • 'r' refresh • 'l' toggle filter • Auto-refresh: 2s",
+			len(filteredConns), len(m.connections), filterStatus),
 	))
 
 	return b.String()
+}
+
+// filterConnections returns connections based on the current filter mode
+func (m Model) filterConnections() []conn.Connection {
+	if m.filterMode == FilterAll {
+		return m.connections
+	}
+
+	filtered := make([]conn.Connection, 0)
+	for _, c := range m.connections {
+		// Only check the remote address to determine if connection is local or public
+		isLocal := isLocalAddress(c.RemoteIp)
+
+		if m.filterMode == FilterLocal && isLocal {
+			filtered = append(filtered, c)
+		} else if m.filterMode == FilterPublic && !isLocal {
+			filtered = append(filtered, c)
+		}
+	}
+
+	return filtered
+}
+
+// isLocalAddress checks if an IP address is local/loopback/private
+func isLocalAddress(ip string) bool {
+	// Loopback and unspecified addresses
+	if ip == "127.0.0.1" || ip == "::1" || ip == "0.0.0.0" {
+		return true
+	}
+
+	// Loopback range (127.x.x.x)
+	if strings.HasPrefix(ip, "127.") {
+		return true
+	}
+
+	// Private IP ranges
+	if strings.HasPrefix(ip, "10.") {
+		return true
+	}
+
+	if strings.HasPrefix(ip, "192.168.") {
+		return true
+	}
+
+	// 172.16.0.0 - 172.31.255.255
+	if strings.HasPrefix(ip, "172.") {
+		parts := strings.Split(ip, ".")
+		if len(parts) >= 2 {
+			second := parts[1]
+			// Check if second octet is between 16 and 31
+			for i := 16; i <= 31; i++ {
+				if second == fmt.Sprintf("%d", i) {
+					return true
+				}
+			}
+		}
+	}
+
+	// Link-local (169.254.x.x)
+	if strings.HasPrefix(ip, "169.254.") {
+		return true
+	}
+
+	// Multicast (224.x.x.x - 239.x.x.x)
+	if strings.HasPrefix(ip, "224.") || strings.HasPrefix(ip, "225.") ||
+		strings.HasPrefix(ip, "226.") || strings.HasPrefix(ip, "227.") ||
+		strings.HasPrefix(ip, "228.") || strings.HasPrefix(ip, "229.") ||
+		strings.HasPrefix(ip, "230.") || strings.HasPrefix(ip, "231.") ||
+		strings.HasPrefix(ip, "232.") || strings.HasPrefix(ip, "233.") ||
+		strings.HasPrefix(ip, "234.") || strings.HasPrefix(ip, "235.") ||
+		strings.HasPrefix(ip, "236.") || strings.HasPrefix(ip, "237.") ||
+		strings.HasPrefix(ip, "238.") || strings.HasPrefix(ip, "239.") {
+		return true
+	}
+
+	return false
 }
