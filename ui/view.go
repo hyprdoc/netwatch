@@ -4,57 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/xruc/netwatch/conn"
-)
-
-var (
-	// Styles
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#7D56F4")).
-			Background(lipgloss.Color("#1a1a1a")).
-			Padding(0, 1).
-			MarginBottom(1)
-
-	headerStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FAFAFA")).
-			Background(lipgloss.Color("#7D56F4")).
-			Padding(0, 1)
-
-	rowStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FAFAFA"))
-
-	altRowStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#D0D0D0")).
-			Background(lipgloss.Color("#2a2a2a"))
-
-	establishedStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#00FF00")).
-				Bold(true)
-
-	listenStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#00BFFF")).
-			Bold(true)
-
-	closingStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF6B6B")).
-			Bold(true)
-
-	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF0000")).
-			Bold(true).
-			Padding(1)
-
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#626262")).
-			MarginTop(1)
-
-	selectedRowStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FFFFFF")).
-				Background(lipgloss.Color("#5A5AFF")).
-				Bold(true)
 )
 
 // View renders the UI
@@ -86,22 +36,13 @@ func (m Model) View() string {
 		return b.String()
 	}
 
-	// Column widths
-	const (
-		localAddrWidth  = 22
-		remoteAddrWidth = 22
-		stateWidth      = 15
-		pidWidth        = 8
-		procWidth       = 20
-	)
-
 	// Table header
 	header := fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s",
-		localAddrWidth, "Local Address",
-		remoteAddrWidth, "Remote Address",
-		stateWidth, "State",
-		pidWidth, "PID",
-		procWidth, "Process",
+		LocalAddrWidth, "Local Address",
+		RemoteAddrWidth, "Remote Address",
+		StateWidth, "State",
+		PidWidth, "PID",
+		ProcWidth, "Process",
 	)
 	b.WriteString(headerStyle.Render(header))
 	b.WriteString("\n")
@@ -121,14 +62,14 @@ func (m Model) View() string {
 		remoteAddr := fmt.Sprintf("%s:%s", c.RemoteIp, c.RemotePort)
 
 		// Truncate if too long
-		if len(localAddr) > localAddrWidth {
-			localAddr = localAddr[:localAddrWidth-3] + "..."
+		if len(localAddr) > LocalAddrWidth {
+			localAddr = localAddr[:LocalAddrWidth-3] + "..."
 		}
-		if len(remoteAddr) > remoteAddrWidth {
-			remoteAddr = remoteAddr[:remoteAddrWidth-3] + "..."
+		if len(remoteAddr) > RemoteAddrWidth {
+			remoteAddr = remoteAddr[:RemoteAddrWidth-3] + "..."
 		}
-		if len(c.Proc) > procWidth {
-			c.Proc = c.Proc[:procWidth-3] + "..."
+		if len(c.Proc) > ProcWidth {
+			c.Proc = c.Proc[:ProcWidth-3] + "..."
 		}
 
 		// Apply state-specific styling
@@ -139,11 +80,11 @@ func (m Model) View() string {
 		if i == cursor {
 			// For selected row, use plain text for state (no color styling)
 			row = fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s",
-				localAddrWidth, localAddr,
-				remoteAddrWidth, remoteAddr,
-				stateWidth, stateText,
-				pidWidth, c.PID,
-				procWidth, c.Proc,
+				LocalAddrWidth, localAddr,
+				RemoteAddrWidth, remoteAddr,
+				StateWidth, stateText,
+				PidWidth, c.PID,
+				ProcWidth, c.Proc,
 			)
 			b.WriteString(selectedRowStyle.Render(row))
 		} else {
@@ -163,14 +104,14 @@ func (m Model) View() string {
 			// Build row with proper spacing
 			// We need to account for the fact that styled text has ANSI codes
 			// So we pad based on the original text length, not the styled length
-			statePadding := stateWidth - len(stateText)
+			statePadding := StateWidth - len(stateText)
 
 			row = fmt.Sprintf("%-*s %-*s %s%*s %-*s %-*s",
-				localAddrWidth, localAddr,
-				remoteAddrWidth, remoteAddr,
+				LocalAddrWidth, localAddr,
+				RemoteAddrWidth, remoteAddr,
 				stateStyled, statePadding, "",
-				pidWidth, c.PID,
-				procWidth, c.Proc,
+				PidWidth, c.PID,
+				ProcWidth, c.Proc,
 			)
 
 			// Apply alternating row colors
