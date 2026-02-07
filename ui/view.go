@@ -50,6 +50,11 @@ var (
 	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#626262")).
 			MarginTop(1)
+
+	selectedRowStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#FFFFFF")).
+				Background(lipgloss.Color("#5A5AFF")).
+				Bold(true)
 )
 
 // View renders the UI
@@ -101,6 +106,15 @@ func (m Model) View() string {
 	b.WriteString(headerStyle.Render(header))
 	b.WriteString("\n")
 
+	// Keep cursor in bounds for filtered connections
+	cursor := m.cursor
+	if cursor >= len(filteredConns) {
+		cursor = len(filteredConns) - 1
+	}
+	if cursor < 0 {
+		cursor = 0
+	}
+
 	// Table rows
 	for i, c := range filteredConns {
 		localAddr := fmt.Sprintf("%s:%s", c.LocalIp, c.LocalPort)
@@ -119,36 +133,52 @@ func (m Model) View() string {
 
 		// Apply state-specific styling
 		stateText := c.State
-		var stateStyled string
-		switch c.State {
-		case "ESTABLISHED":
-			stateStyled = establishedStyle.Render(c.State)
-		case "LISTEN":
-			stateStyled = listenStyle.Render(c.State)
-		case "CLOSE", "CLOSE_WAIT", "CLOSING", "TIME_WAIT":
-			stateStyled = closingStyle.Render(c.State)
-		default:
-			stateStyled = c.State
-		}
 
-		// Build row with proper spacing
-		// We need to account for the fact that styled text has ANSI codes
-		// So we pad based on the original text length, not the styled length
-		statePadding := stateWidth - len(stateText)
-
-		row := fmt.Sprintf("%-*s %-*s %s%*s %-*s %-*s",
-			localAddrWidth, localAddr,
-			remoteAddrWidth, remoteAddr,
-			stateStyled, statePadding, "",
-			pidWidth, c.PID,
-			procWidth, c.Proc,
-		)
-
-		// Alternate row colors
-		if i%2 == 0 {
-			b.WriteString(rowStyle.Render(row))
+		// Build row - if selected, don't apply state colors (they'll be overridden anyway)
+		var row string
+		if i == cursor {
+			// For selected row, use plain text for state (no color styling)
+			row = fmt.Sprintf("%-*s %-*s %-*s %-*s %-*s",
+				localAddrWidth, localAddr,
+				remoteAddrWidth, remoteAddr,
+				stateWidth, stateText,
+				pidWidth, c.PID,
+				procWidth, c.Proc,
+			)
+			b.WriteString(selectedRowStyle.Render(row))
 		} else {
-			b.WriteString(altRowStyle.Render(row))
+			// For non-selected rows, apply state-specific styling
+			var stateStyled string
+			switch c.State {
+			case "ESTABLISHED":
+				stateStyled = establishedStyle.Render(c.State)
+			case "LISTEN":
+				stateStyled = listenStyle.Render(c.State)
+			case "CLOSE", "CLOSE_WAIT", "CLOSING", "TIME_WAIT":
+				stateStyled = closingStyle.Render(c.State)
+			default:
+				stateStyled = c.State
+			}
+
+			// Build row with proper spacing
+			// We need to account for the fact that styled text has ANSI codes
+			// So we pad based on the original text length, not the styled length
+			statePadding := stateWidth - len(stateText)
+
+			row = fmt.Sprintf("%-*s %-*s %s%*s %-*s %-*s",
+				localAddrWidth, localAddr,
+				remoteAddrWidth, remoteAddr,
+				stateStyled, statePadding, "",
+				pidWidth, c.PID,
+				procWidth, c.Proc,
+			)
+
+			// Apply alternating row colors
+			if i%2 == 0 {
+				b.WriteString(rowStyle.Render(row))
+			} else {
+				b.WriteString(altRowStyle.Render(row))
+			}
 		}
 		b.WriteString("\n")
 	}
@@ -166,7 +196,7 @@ func (m Model) View() string {
 	}
 
 	b.WriteString(helpStyle.Render(
-		fmt.Sprintf("Showing: %d/%d (%s) • 'q' quit • 'r' refresh • 'l' toggle filter • Auto-refresh: 2s",
+		fmt.Sprintf("Showing: %d/%d (%s) • ↑↓/j/k navigate • 'l' filter • 'r' refresh • 'q' quit • Auto-refresh: 2s",
 			len(filteredConns), len(m.connections), filterStatus),
 	))
 

@@ -25,6 +25,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case FilterPublic:
 				m.filterMode = FilterAll
 			}
+			// Reset cursor when filter changes
+			m.cursor = 0
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "down", "j":
+			// We'll check bounds in the view based on filtered connections
+			m.cursor++
 		}
 
 	case tea.WindowSizeMsg:
@@ -35,6 +44,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update connections when new data arrives
 		m.connections = msg
 		m.err = nil
+		// Keep cursor in bounds
+		if m.cursor >= len(msg) {
+			m.cursor = len(msg) - 1
+		}
+		if m.cursor < 0 {
+			m.cursor = 0
+		}
 
 	case errMsg:
 		m.err = msg.err

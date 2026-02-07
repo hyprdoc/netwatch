@@ -24,6 +24,7 @@ type Model struct {
 	height      int
 	netPath     string
 	filterMode  FilterMode
+	cursor      int // Currently selected row
 }
 
 // tickMsg is sent periodically to refresh connection data
