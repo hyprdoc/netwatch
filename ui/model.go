@@ -73,7 +73,7 @@ func fetchConnections() tea.Cmd {
 
 // tickEvery returns a command that sends tick messages periodically
 func tickEvery() tea.Cmd {
-	return tea.Tick(5*time.Second, func(t time.Time) tea.Msg {
+	return tea.Tick(500*time.Millisecond, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }

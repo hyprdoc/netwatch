@@ -7,9 +7,16 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/xruc/netwatch/ui"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 func main() {
+
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 
 	f, err := tea.LogToFile("debug.log", "debug")
 	if err != nil {

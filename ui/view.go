@@ -1,8 +1,12 @@
 package ui
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
+
+	"github.com/xruc/netwatch/conn"
 )
 
 // View renders the UI
@@ -19,6 +23,9 @@ func (m Model) View() string {
 
 	// Filter connections based on mode
 	filteredConns := m.connections
+	slices.SortFunc(filteredConns, func(a, b conn.Connection) int {
+		return cmp.Compare(a.Proc, b.Proc)
+	})
 
 	// No connections
 	if len(filteredConns) == 0 {

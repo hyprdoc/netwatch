@@ -112,14 +112,14 @@ func isWildcardLocal(local string) bool {
 	}
 
 	// Common ss / netstat patterns
-	if local == "0.0.0.0:0" || local == "0.0.0.0:*" ||
-		local == ":::0" || local == ":::*" {
+	if local == "0.0.0.0:0" || local == "0.0.0.0:" ||
+		local == ":::0" || local == ":::" {
 		return true
 	}
 
 	// Anything starting with 0.0.0.0: or ::: (followed by port)
 	if strings.HasPrefix(local, "0.0.0.0") ||
-		strings.HasPrefix(local, ":::") {
+		strings.HasPrefix(local, "::") {
 		return true
 	}
 
